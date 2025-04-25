@@ -15,17 +15,6 @@ This is a clone of original Severian's server mod with some improvements.
 		* Flashlight is much brighter than normal.
 		* Map information, remaining time, and fraglimit displayed when you are dead.
 		* Identification of players when you aim your crosshair at them, built in.
-    * Infinite ammo for gauss
+    		* Infinite ammo for gauss
 
-If you want to enable or disable some improvements add the next text to the cvars.ini        Or change sev.ini
-"sev_mod"			          "0" "1"			             "u"   -disable/enable plugin
-"sev_flashlight_style"  "0" "1"                  "u"   -classsic/severian flashlight
-"sev_snark_style"       "0" "1"                  "u"   -classic/severian snark
-"sev_status_style"      "0" "1" "2"              "u"   -classic/severian/disabled status when player aim
-"sev_hornet_style"      "0" "1"                  "u"   -classic/severian colored hornets
-"sev_tripmine_style"    "0" "1"                  "u"   -classic/severian tripmine
-"sev_death_info"        "0" "1"                  "u"   -disable/enable hud messeage after death
-"sev_sp_time"           "0" "0.5" "1.0" "2.0"    "u"   -Spawn protection time in seconds.
-"sev_remove_map_equip"  "0" "1"                  "u"   -Remove in map spawn equipment
-"sev_shotgun_gibs"      "0" "1"                  "u"   -Make gibs if damage for shotgun exeeds 180 pts.
-"sev_shotgun_bloodspray""0" "1"                  "u"   -Make blood spray bigger
+If you want to enable or disable some improvements change cvars.ini like in the repository       Or change cvars in sev.ini
