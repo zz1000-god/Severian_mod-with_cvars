@@ -81,6 +81,7 @@ const m_flNextAttack				= 148
 const LINUX_OFFSET_WEAPONS			= 4
 const LINUX_OFFSET_AMMO				= 5
 const OFFSET_AMMO_HEGRENADE			= 319
+const iHandGrenadeAmmoIndex 		= 10
 
 const m_rgAmmo					= 310;
 const iUraniumAmmoIndex				= 5;
@@ -90,6 +91,7 @@ new g_CrowbarSounds[2][64] = {"scientist/hello.wav", "scientist/hello2.wav"}
 new g_OldClip[33]
 new g_OldSpecialReload[33]
 new g_LastTripmineAttack[33]
+new g_grenade_alt_counter[33]
 new g_SpawnsId[64]
 new g_BlockSound
 new g_MaxPlayers
@@ -639,62 +641,63 @@ public remove_telesprite_task(ent)
 
 public Grenade_SecondaryAttack_Pre(weapon)
 {
-	if (!PLUGIN_ENABLED || !g_enable_grenade) return HAM_SUPERCEDE;
-	new player = pev(weapon, pev_owner)
-	new ammo = get_pdata_int(player, OFFSET_AMMO_HEGRENADE, LINUX_OFFSET_AMMO)	
-	
-	if(!ammo)
-		return HAM_SUPERCEDE
-	
-	new g_GrenadeSounds[2][48] = {"weapons/glauncher.wav", "weapons/glauncher2.wav"}
+    if (!PLUGIN_ENABLED || !g_enable_grenade) return HAM_SUPERCEDE;
+    new player = pev(weapon, pev_owner);
 
-	new Float:origin[3]
-	new Float:velocity[3]
-	new Float:avelocity[3]
-	new Float:v_ofs[3]
-	new Float:angles[3]		
+    // Синхронізуємо альтернативний лічильник з m_rgAmmo
+    new ammo = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO);
+    if (g_grenade_alt_counter[player] != ammo)
+        g_grenade_alt_counter[player] = ammo;
 
-	ammo--
-	
-	set_pdata_int(player, OFFSET_AMMO_HEGRENADE, ammo, LINUX_OFFSET_AMMO)
-	
-	new ent = engfunc(EngFunc_CreateNamedEntity, g_GrenadeAllocString)
-	
-	pev(player, pev_origin, origin)
-	pev(player, pev_view_ofs, v_ofs)
-	pev(player, pev_angles, angles)
-	
-	origin[0] += v_ofs[0] 
-	origin[1] += v_ofs[1]
-	origin[2] += v_ofs[2] 
-	
-	velocity_by_aim (player, 800, velocity)	
-	
-	avelocity[0] = random_float(-500.0, 100.0)
-	avelocity[2] = random_float(-100.0, 100.0)
-	
-	set_pev(ent, pev_avelocity, avelocity)	
-	
-	set_pev(ent, pev_origin, origin)
-	set_pev(ent, pev_angles, angles)
-	set_pev(ent, pev_owner, player)
-	set_pev(ent, pev_gravity, 0.5)
-	set_pev(ent, pev_velocity, velocity)
-	
-	dllfunc(DLLFunc_Spawn, ent)
-	
-	set_pev(ent, pev_takedamage, DAMAGE_YES)
-	set_pev(ent, pev_health, 100.0)
-	
-	engfunc(EngFunc_SetModel, ent, "models/w_grenade.mdl")	
-	
-	UTIL_PlayWeaponAnimation (player, 5)
-	
-	if(ammo)
-		set_task(1.0, "grenade_draw_anim", player + 4454)
-	
-	emit_sound(ent, CHAN_WEAPON, g_GrenadeSounds[random_num(0, 1)], 1.0, ATTN_NORM, 0, PITCH_NORM)
-	return HAM_HANDLED
+    if (g_grenade_alt_counter[player] <= 0)
+        return HAM_SUPERCEDE;
+
+    new g_GrenadeSounds[2][48] = {"weapons/glauncher.wav", "weapons/glauncher2.wav"};
+
+    new Float:origin[3];
+    new Float:velocity[3];
+    new Float:avelocity[3];
+    new Float:v_ofs[3];
+    new Float:angles[3];
+
+    // Зменшуємо обидва лічильники!
+    g_grenade_alt_counter[player]--;
+    set_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, g_grenade_alt_counter[player], LINUX_OFFSET_AMMO);
+
+    new ent = engfunc(EngFunc_CreateNamedEntity, g_GrenadeAllocString);
+
+    pev(player, pev_origin, origin);
+    pev(player, pev_view_ofs, v_ofs);
+    pev(player, pev_angles, angles);
+
+    origin[0] += v_ofs[0];
+    origin[1] += v_ofs[1];
+    origin[2] += v_ofs[2];
+
+    velocity_by_aim(player, 800, velocity);
+
+    avelocity[0] = random_float(-500.0, 100.0);
+    avelocity[2] = random_float(-100.0, 100.0);
+
+    set_pev(ent, pev_avelocity, avelocity);
+    set_pev(ent, pev_origin, origin);
+    set_pev(ent, pev_angles, angles);
+    set_pev(ent, pev_owner, player);
+    set_pev(ent, pev_gravity, 0.5);
+    set_pev(ent, pev_velocity, velocity);
+
+    dllfunc(DLLFunc_Spawn, ent);
+    set_pev(ent, pev_takedamage, DAMAGE_YES);
+    set_pev(ent, pev_health, 100.0);
+    engfunc(EngFunc_SetModel, ent, "models/w_grenade.mdl");
+
+    UTIL_PlayWeaponAnimation(player, 5);
+
+    if (g_grenade_alt_counter[player] > 0)
+        set_task(1.0, "grenade_draw_anim", player + 4454);
+
+    emit_sound(ent, CHAN_WEAPON, g_GrenadeSounds[random_num(0, 1)], 1.0, ATTN_NORM, 0, PITCH_NORM);
+    return HAM_HANDLED;
 }
 
 public Grenade_SecondaryAttack_Post(weapon)
@@ -709,6 +712,11 @@ public grenade_draw_anim(player)
 	player -= 4454
 	if(get_user_weapon(player) == HLW_HANDGRENADE)
 		UTIL_PlayWeaponAnimation(player, 7)
+}
+
+public Grenade_Pickup(player)
+{
+    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
 }
 
 public Grenade_Touch(ent)
@@ -869,22 +877,25 @@ public Player_Spawn_Pre(player)
 
 public Player_Spawn_Post(player)
 {
-	if (!PLUGIN_ENABLED) return;
-	const 	Float:opacity = 128.0
-	new 	Float:sp_time = get_pcvar_float(g_pcvar_spawnprotect_time)
-	
-	g_BlockSound = 0	
+    if (!PLUGIN_ENABLED) return;
+    const Float:opacity = 128.0
+    new Float:sp_time = get_pcvar_float(g_pcvar_spawnprotect_time)
+    g_BlockSound = 0	
 
-	emit_sound(player, CHAN_AUTO, "items/gunpickup2.wav", 0.8, ATTN_NORM, 0, PITCH_NORM)
-	
-	if(sp_time > 0)
-	{
-		set_pev(player, pev_takedamage, DAMAGE_NO)
-		set_pev(player, pev_rendermode, kRenderTransAlpha)
-		set_pev(player, pev_renderamt, opacity)
-		set_task(sp_time, "unset_spawn_protection", player + 8712)
-	}
+    emit_sound(player, CHAN_AUTO, "items/gunpickup2.wav", 0.8, ATTN_NORM, 0, PITCH_NORM)
+
+    // Синхронізуємо альтернативний лічильник з m_rgAmmo
+    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
+
+    if(sp_time > 0)
+    {
+        set_pev(player, pev_takedamage, DAMAGE_NO)
+        set_pev(player, pev_rendermode, kRenderTransAlpha)
+        set_pev(player, pev_renderamt, opacity)
+        set_task(sp_time, "unset_spawn_protection", player + 8712)
+    }
 }
+
 
 public unset_spawn_protection(player)
 {
@@ -962,8 +973,7 @@ public msg_FlashLight(msg_id, msg_dest, player)
 		set_pev(player, pev_effects, pev(player, pev_effects) | EF_BRIGHTLIGHT)						
 	else 
 		set_pev(player, pev_effects, pev(player, pev_effects) & ~EF_BRIGHTLIGHT)
-
-	return PLUGIN_CONTINUE
+		return PLUGIN_CONTINUE
 }
 
 // ===================================================================== DEATH INFO ============================
@@ -980,7 +990,9 @@ public Player_Death_Post(player)
 
 	new fraglimit = get_pcvar_num(g_pcvar_fraglimit)
 	new timelimit = get_pcvar_num(g_pcvar_timelimit)
-	
+
+    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
+
 	get_mapname(mapname, 31)
 	format_time(time_left, 31, "%M min %S sec", get_timeleft())
 	
