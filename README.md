@@ -15,6 +15,6 @@ This is a clone of original Severian's server mod with some improvements.
 		* Flashlight is much brighter than normal.
 		* Map information, remaining time, and fraglimit displayed when you are dead.
 		* Identification of players when you aim your crosshair at them, built in.
-    		* Infinite ammo for gauss
+    	* Infinite ammo for gauss
 
 If you want to enable or disable some improvements change cvars.ini like in the repository       Or change cvars in sev.ini
