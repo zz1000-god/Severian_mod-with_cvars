@@ -54,23 +54,21 @@
 #include <engine>
 #include <hamsandwich>
 
-
 #define PLUGIN "Severian's Mod AMXX"
 #define VERSION "1.35"
 #define AUTHOR "LetiLetiLepestok"
 #define MAX_GAUSS_AMMO 254
 
-
+new g_pcvar_enable_plugin;
+#define PLUGIN_ENABLED (get_pcvar_num(g_pcvar_enable_plugin) == 1)
 
 #define GAME_DESCRIPTION "Severian's Mod+"
-
 
 const Float:g_DamagePerShot			= 25.0
 const Float:g_DamageCrowbar			= 50.0
 const Float:g_SnarkThrowInterval	= 0.1
 const g_GibsDmg						= 180
 const g_HornetTrailTime 			= 10
-
 
 const m_pPlayer						= 28
 const m_fInSpecialReload			= 34
@@ -85,9 +83,7 @@ const LINUX_OFFSET_AMMO				= 5
 const OFFSET_AMMO_HEGRENADE			= 319
 
 const m_rgAmmo					= 310;
-
 const iUraniumAmmoIndex				= 5;
-
 
 new g_CrowbarSounds[2][64] = {"scientist/hello.wav", "scientist/hello2.wav"}
 
@@ -113,12 +109,10 @@ new g_pcvar_death_info
 new g_pcvar_shotgun_gibs
 new g_pcvar_shotgun_blod
 
-
-
-
-
+// Конфігураційні перемикачі
 new g_enable_shotgun, g_enable_crossbow, g_enable_crowbar;
 new g_enable_snark, g_enable_grenade, g_enable_tripmine;
+new g_enable_gauss_ammo;
 
 public plugin_cfg() {
     new configfile[64];
@@ -129,6 +123,7 @@ public plugin_cfg() {
         log_amx("sev.ini not found! All features enabled by default.");
         g_enable_shotgun = g_enable_crossbow = g_enable_crowbar = 1;
         g_enable_snark = g_enable_grenade = g_enable_tripmine = 1;
+        g_enable_gauss_ammo = 1;
         return;
     }
 
@@ -138,11 +133,13 @@ public plugin_cfg() {
     g_enable_snark = read_config_setting(configfile, "snark", 1);
     g_enable_grenade = read_config_setting(configfile, "grenade", 1);
     g_enable_tripmine = read_config_setting(configfile, "tripmine", 1);
+    g_enable_gauss_ammo = read_config_setting(configfile, "gauss_ammo", 1);
 }
 
 read_config_setting(const file[], const key[], defvalue) {
     new line[128], tempKey[32], tempValue[4];
-    for (new i = 0; read_file(file, i, line, charsmax(line), _, _); i++) {
+    new txtlen;
+    for (new i = 0; read_file(file, i, line, charsmax(line), txtlen); i++) {
         trim(line);
         if (line[0] == ';' || line[0] == '#' || !line[0])
             continue;
@@ -158,6 +155,8 @@ read_config_setting(const file[], const key[], defvalue) {
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
+
+	g_pcvar_enable_plugin = register_cvar("sev_mod", "1"); // Глобальний перемикач
 
 	RegisterHam(Ham_Weapon_PrimaryAttack	, "weapon_shotgun", "Shotgun_PrimaryAttack_Pre" , 0)
 	RegisterHam(Ham_Weapon_PrimaryAttack	, "weapon_shotgun", "Shotgun_PrimaryAttack_Post", 1)
@@ -230,9 +229,6 @@ public plugin_init()
 	start_map()
 }
 
-
-
-
 public plugin_precache()
 {
 	precache_sound("gonarch/gon_alert1.wav")
@@ -251,9 +247,6 @@ public plugin_precache()
 	precache_model("models/w_grenade.mdl")
 	precache_model("models/w_chainammo.mdl")
 }
-
-
-
 
 public start_map()
 {
@@ -330,25 +323,18 @@ public start_map()
 		if(line > 48)
 			break
 
-		//server_print("* [%d] '%s'^t^t^t^t'%s'", line, equip_name , equip_num)
 		equip_name = ""
 		equip_num = ""
 	}
 	DispatchSpawn(ent)
 }
 
-
-
-
 // ===================================================================== SHOTGUN & CROWBAR POWER =========================
-
-
-
 
 public fw_TraceAttack(victim, inflictor, Float:damage, Float:direction[3], traceresult, damagebits)
 {
-	if(!(1 <= inflictor <= g_MaxPlayers))
-		return HAM_IGNORED
+	if (!PLUGIN_ENABLED) 
+		return HAM_IGNORED;
 
 	static weapon
 	static Float:hitpoint[3]
@@ -359,6 +345,7 @@ public fw_TraceAttack(victim, inflictor, Float:damage, Float:direction[3], trace
 
 	if(weapon == HLW_SHOTGUN)
 	{
+		if (!g_enable_shotgun) return HAM_IGNORED;
 		SetHamParamFloat(3, g_DamagePerShot)
 		
 		if(!get_pcvar_num(g_pcvar_shotgun_blod))
@@ -385,17 +372,17 @@ public fw_TraceAttack(victim, inflictor, Float:damage, Float:direction[3], trace
 	}
 	
 	if(weapon == HLW_CROWBAR)		
+	{
+		if (!g_enable_crowbar) return HAM_IGNORED;
 		SetHamParamFloat(3, g_DamageCrowbar)
+	}
 			
 	return HAM_IGNORED
 }
 
-
-
 public fw_TraceAttackWorld(victim, inflictor, Float:damage, Float:direction[3], traceresult, damagebits)
 {
-	if(damagebits != DMG_BULLET)
-		return HAM_IGNORED
+	if (!PLUGIN_ENABLED) return HAM_IGNORED;
 	
 	static Float:hitpoint[3]
 	get_tr2(traceresult, TR_vecEndPos, hitpoint)
@@ -409,43 +396,31 @@ public fw_TraceAttackWorld(victim, inflictor, Float:damage, Float:direction[3], 
 	return HAM_HANDLED
 }
 
-
-
 // ===================================================================== GIBS ==================================
-
-
-
 
 public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type)
 {
-	if(damage < g_GibsDmg || !(1 <= inflictor <= g_MaxPlayers) || !get_pcvar_num(g_pcvar_shotgun_gibs))
-		return HAM_IGNORED
+	if (!PLUGIN_ENABLED || !g_enable_shotgun || damage < g_GibsDmg || !(1 <= inflictor <= g_MaxPlayers) || !get_pcvar_num(g_pcvar_shotgun_gibs))
+		return HAM_IGNORED;
 
 	if(get_user_weapon(inflictor) == HLW_SHOTGUN)
-		SetHamParamInteger(5, DMG_ALWAYSGIB)
-		
-	return HAM_IGNORED
+		SetHamParamInteger(5, DMG_ALWAYSGIB);
+
+	return HAM_IGNORED;
 }
-
-
-
 
 // ===================================================================== SHOTGUN SPEED =========================
 
-
-
-
 public Shotgun_PrimaryAttack_Pre (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 	g_OldClip[player] = get_pdata_int(shotgun, m_iClip, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 public Shotgun_PrimaryAttack_Post (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 
 	if (g_OldClip[player] <= 0)
@@ -460,20 +435,16 @@ public Shotgun_PrimaryAttack_Post (const shotgun)
 		set_pdata_float(shotgun, m_flTimeWeaponIdle, 0.3, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 public Shotgun_SecondaryAttack_Pre (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 	g_OldClip[player] = get_pdata_int(shotgun, m_iClip, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 public Shotgun_SecondaryAttack_Post (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 
 	if (g_OldClip[player] <= 1)
@@ -488,20 +459,16 @@ public Shotgun_SecondaryAttack_Post (const shotgun)
 		set_pdata_float(shotgun, m_flTimeWeaponIdle, 0.85, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 public Shotgun_Reload_Pre (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 	g_OldSpecialReload[player] = get_pdata_int(shotgun, m_fInSpecialReload, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 public Shotgun_Reload_Post (const shotgun)
 {
+	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
 	
 	switch (g_OldSpecialReload[player])
@@ -524,29 +491,23 @@ public Shotgun_Reload_Post (const shotgun)
 	}
 }
 
-
-
-
 // ===================================================================== CROSSBOW SPEED ========================
 
-
-
-
 public Crossbow_PrimaryAttack_Post (const crossbow)
+{
+	if (!PLUGIN_ENABLED || !g_enable_crossbow) return;
 	set_pdata_float(crossbow, m_flNextPrimaryAttack  , 0.4, LINUX_OFFSET_WEAPONS)
-
-
-
-
+}
 
 public Crossbow_SecondaryAttack_Post(const crossbow)
+{
+	if (!PLUGIN_ENABLED || !g_enable_crossbow) return;
 	set_pdata_float(crossbow, m_flNextSecondaryAttack, 0.5, LINUX_OFFSET_WEAPONS)
+}
 
-
-	
-	
 public Crossbow_Reload_Post (const crossbow)
 {
+	if (!PLUGIN_ENABLED || !g_enable_crossbow) return;
 	new player = get_pdata_cbase(crossbow, m_pPlayer, LINUX_OFFSET_WEAPONS)
 	
 	set_pdata_float(player , m_flNextAttack, 2.0)
@@ -555,16 +516,11 @@ public Crossbow_Reload_Post (const crossbow)
 	set_pdata_float(crossbow, m_flNextSecondaryAttack, 2.1, LINUX_OFFSET_WEAPONS)
 }
 
-
-
-
 // ===================================================================== SNARK MODEL & SOUND ===================
-
-
-
 
 public  fwd_EmitSound(ent, channel, sample[], Float:volume, Float:attn, flags, pitch) 
 {
+	if (!PLUGIN_ENABLED) return FMRES_IGNORED;
 	if(g_BlockSound)
 		return FMRES_SUPERCEDE
 	
@@ -577,7 +533,7 @@ public  fwd_EmitSound(ent, channel, sample[], Float:volume, Float:attn, flags, p
 		return FMRES_HANDLED
 	}
 	
-	if(!get_pcvar_num(g_pcvar_snark_style) || !equal(classname, "monster_snark"))
+	if(!get_pcvar_num(g_pcvar_snark_style) || !equal(classname, "monster_snark") || !g_enable_snark)
 		return FMRES_IGNORED
 	
 	replace (sample, 64, "squeek/sqk_hunt", "gonarch/gon_alert") 
@@ -586,12 +542,10 @@ public  fwd_EmitSound(ent, channel, sample[], Float:volume, Float:attn, flags, p
 	return FMRES_SUPERCEDE
 }
 
-
-
-
 public fwd_SetModel(ent, model[])
 {	
-	if(get_pcvar_num(g_pcvar_snark_style) && equal(model, "models/w_squeak.mdl"))
+	if (!PLUGIN_ENABLED) return FMRES_IGNORED;
+	if(get_pcvar_num(g_pcvar_snark_style) && equal(model, "models/w_squeak.mdl") && g_enable_snark)
 	{
 		engfunc(EngFunc_SetModel, ent, "models/chumtoad.mdl")
 		return FMRES_SUPERCEDE
@@ -599,27 +553,19 @@ public fwd_SetModel(ent, model[])
 	return FMRES_IGNORED
 }
 
-
-
-
 // ===================================================================== SNARK INTERVAL ========================
 
-
-
-
 public Snark_PrimaryAttack_Post(weapon)
+{
+	if (!PLUGIN_ENABLED || !g_enable_snark) return;
 	set_pdata_float(weapon, m_flNextPrimaryAttack, g_SnarkThrowInterval, LINUX_OFFSET_WEAPONS)
-
-
-
+}
 
 // ===================================================================== SNARK TELEPORT ========================
 
-
-
-
 public Snark_SecondaryAttack_Post(id)
 {
+	if (!PLUGIN_ENABLED || !g_enable_snark) return;
 	new spawnId
 	new Float:origin[3]
 	new Float:angles[3]
@@ -682,9 +628,6 @@ public Snark_SecondaryAttack_Post(id)
 	set_task(0.5, "remove_telesprite_task", ent + 33453)
 }
 
-
-
-
 public remove_telesprite_task(ent)
 {
 	ent -= 33453
@@ -692,17 +635,11 @@ public remove_telesprite_task(ent)
 		engfunc(EngFunc_RemoveEntity, ent)
 }
 
-
-
-
 // ===================================================================== GRENADE SECONDARY =====================
-
-
-
 
 public Grenade_SecondaryAttack_Pre(weapon)
 {
-	
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return HAM_SUPERCEDE;
 	new player = pev(weapon, pev_owner)
 	new ammo = get_pdata_int(player, OFFSET_AMMO_HEGRENADE, LINUX_OFFSET_AMMO)	
 	
@@ -759,61 +696,48 @@ public Grenade_SecondaryAttack_Pre(weapon)
 	emit_sound(ent, CHAN_WEAPON, g_GrenadeSounds[random_num(0, 1)], 1.0, ATTN_NORM, 0, PITCH_NORM)
 	return HAM_HANDLED
 }
-	
-	
-	
-	
-public Grenade_SecondaryAttack_Post(weapon)
-	set_pdata_float (weapon, m_flNextSecondaryAttack, 5.0, LINUX_OFFSET_WEAPONS)
 
-	
-	
-	
+public Grenade_SecondaryAttack_Post(weapon)
+{
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return;
+	set_pdata_float (weapon, m_flNextSecondaryAttack, 5.0, LINUX_OFFSET_WEAPONS)
+}
+
 public grenade_draw_anim(player)
 {
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return;
 	player -= 4454
 	if(get_user_weapon(player) == HLW_HANDGRENADE)
 		UTIL_PlayWeaponAnimation(player, 7)
 }
 
-
-
-
 public Grenade_Touch(ent)
+{
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return;
 	ExecuteHam(Ham_TakeDamage, ent, 0, 0, 1000.0, 0)
-
-
-
+}
 
 public Grenade_PrimaryAttack_Post(weapon)
+{
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return;
 	set_pdata_float (weapon, m_flNextSecondaryAttack, 1.0, LINUX_OFFSET_WEAPONS)
+}
 
-	
-	
-	
-	
 // ===================================================================== CROWBAR SECONDARY =====================	
-
-
-
 
 public Crowbar_SecondaryAttack_Post(weapon)
 {
+	if (!PLUGIN_ENABLED || !g_enable_crowbar) return;
 	new player = pev(weapon, pev_owner)
 	set_pdata_float (weapon, m_flNextSecondaryAttack, 2.0, LINUX_OFFSET_WEAPONS)
 	emit_sound(player, CHAN_VOICE, g_CrowbarSounds[random_num(0,1)], 1.0, ATTN_NORM, 0, PITCH_NORM)
 }
 
-
-
-
 // ===================================================================== HORNET COLOR ==========================	
-
-
-
 
 public msg_TempEntity()
 {
+	if (!PLUGIN_ENABLED) return PLUGIN_CONTINUE;
 	static r
 	static g
 	static b
@@ -851,27 +775,19 @@ public msg_TempEntity()
 	return PLUGIN_CONTINUE
 }
 
-
-
-
 // ===================================================================== TRIPMINE SECONDARY ====================	
-	
-	
-	
 	
 public TripminePrimaryAttack_Pre(weapon)
 {
+	if (!PLUGIN_ENABLED || !g_enable_tripmine) return HAM_SUPERCEDE;
 	new player = pev(weapon, pev_owner)
 	g_LastTripmineAttack[player] = 1
 	return HAM_HANDLED
 }	
 
-
-
-
 public Tripmine_SecondaryAttack_Pre(weapon)
 {
-	if(!get_pcvar_num(g_pcvar_tripmine_style))
+	if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_tripmine_style) || !g_enable_tripmine)
 		return HAM_SUPERCEDE
 	
 	new player = pev(weapon, pev_owner)
@@ -881,11 +797,9 @@ public Tripmine_SecondaryAttack_Pre(weapon)
 	return HAM_SUPERCEDE
 }
 
-
-
-
 public TripMine_Spawn_Post(tripmine)
 {
+	if (!PLUGIN_ENABLED || !g_enable_tripmine) return;
 	new player = pev(tripmine, pev_owner)
 	if(g_LastTripmineAttack[player] == 2)
 	{
@@ -894,12 +808,9 @@ public TripMine_Spawn_Post(tripmine)
 	}	
 }
 
-
-
-
 public TripMine_Beam(tripmine)
 {
-	if(!get_pcvar_num(g_pcvar_tripmine_style))
+	if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_tripmine_style) || !g_enable_tripmine)
 		return HAM_IGNORED
 	
 	new player = pev(tripmine, pev_iuser4)
@@ -920,12 +831,9 @@ public TripMine_Beam(tripmine)
 	return false
 }
 
-
-
-
 public TripMine_Think_Post(tripmine)
 {
-	if(!get_pcvar_num(g_pcvar_tripmine_style) || !pev_valid(tripmine))
+	if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_tripmine_style) || !pev_valid(tripmine) || !g_enable_tripmine)
 		return HAM_IGNORED
 	
 	static Float:color_time
@@ -951,22 +859,17 @@ public TripMine_Think_Post(tripmine)
 	return HAM_IGNORED
 }
 
-
-
-
 // ===================================================================== SPAWN PROTECT & SPAWN SOUND ===========		
 
-
-
-
 public Player_Spawn_Pre(player)
+{
+	if (!PLUGIN_ENABLED) return;
 	g_BlockSound = 1
-
-
-
+}
 
 public Player_Spawn_Post(player)
 {
+	if (!PLUGIN_ENABLED) return;
 	const 	Float:opacity = 128.0
 	new 	Float:sp_time = get_pcvar_float(g_pcvar_spawnprotect_time)
 	
@@ -983,11 +886,9 @@ public Player_Spawn_Post(player)
 	}
 }
 
-
-
-
 public unset_spawn_protection(player)
 {
+	if (!PLUGIN_ENABLED) return;
 	player -= 8712
 	if(pev_valid(player))
 	{
@@ -997,16 +898,11 @@ public unset_spawn_protection(player)
 	}
 }
 
-
-
-
 // ===================================================================== PLAYER INFO ===========================
-
-
-
 
 public msg_StatusValue(iMsgID, iDest, iClient)
 {
+	if (!PLUGIN_ENABLED) return PLUGIN_CONTINUE;
 	if(!get_pcvar_num(g_pcvar_status_style))
 		return PLUGIN_CONTINUE
 	
@@ -1026,11 +922,9 @@ public msg_StatusValue(iMsgID, iDest, iClient)
 	return PLUGIN_HANDLED
 }
 
-
-
-
 public show_status(status[])
 {
+	if (!PLUGIN_ENABLED) return;
 	const 	Float:x = -1.0
 	const 	Float:y = 0.55
 	
@@ -1056,16 +950,11 @@ public show_status(status[])
 	set_task(1.5 , "show_status" , status[0] + 4090 , status , 3)
 }
 
-
-
-
 // ===================================================================== FLASHLIGHT ============================
-
-
-
 
 public msg_FlashLight(msg_id, msg_dest, player)
 {
+	if (!PLUGIN_ENABLED) return PLUGIN_CONTINUE;
 	if(!get_pcvar_num(g_pcvar_flashlight_style))
 		return PLUGIN_CONTINUE
 	
@@ -1077,16 +966,11 @@ public msg_FlashLight(msg_id, msg_dest, player)
 	return PLUGIN_CONTINUE
 }
 
-
-
-
 // ===================================================================== DEATH INFO ============================
-
-
-
 
 public Player_Death_Post(player)
 {
+	if (!PLUGIN_ENABLED) return;
 	if(!get_pcvar_num(g_pcvar_death_info))
 		return
 	
@@ -1113,11 +997,9 @@ public Player_Death_Post(player)
 	show_hudmessage(player, "Running Severian's AMXX Mod v.%s by LetiLetiLepestok^n^n^n%s", VERSION, message) 
 }
 
-
-
-
 public get_fragsleft()
 {
+    if (!PLUGIN_ENABLED) return 0;
     new i
     new frags
     new frags_max = -32767
@@ -1134,27 +1016,16 @@ public get_fragsleft()
     return clamp(get_pcvar_num(g_pcvar_fraglimit) - frags_max, 0)
 }
 
-
-
-
 // ===================================================================== GAME DESCRIPTION ======================
-
-
-
 
 public fwd_GetGameDescription()
 { 
+	if (!PLUGIN_ENABLED) return FMRES_IGNORED;
 	forward_return(FMV_STRING, GAME_DESCRIPTION)
 	return FMRES_SUPERCEDE
 }
 
-
-
-	
 // ===================================================================== STOCKS ================================	
-
-
-
 
 stock UTIL_PlayWeaponAnimation (const Player, const Sequence)
 {
@@ -1165,11 +1036,11 @@ stock UTIL_PlayWeaponAnimation (const Player, const Sequence)
     write_byte(0)
     message_end()
 }
+
 //================================================== GAUSS AMMO ================================================
 
-
-
 public Gauss_Attack_Post(iItem) {
+    if (!PLUGIN_ENABLED || !g_enable_gauss_ammo) return HAM_IGNORED;
     if (!pev_valid(iItem)) return HAM_IGNORED
 
     new id = get_pdata_cbase(iItem, m_pPlayer, LINUX_OFFSET_WEAPONS)
@@ -1179,6 +1050,4 @@ public Gauss_Attack_Post(iItem) {
 
     return HAM_IGNORED
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1058\\ f0\\ fs16 \n\\ par }
-*/
+
