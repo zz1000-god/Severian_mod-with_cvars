@@ -1,4 +1,5 @@
 This is a clone of original Severian's server mod with some improvements.
+Only works on Bugfixed-HL
 		
 		* Shotgun reloads much faster than normal.
 		* Shotgun shoots much faster than normal.
