@@ -1,50 +1,50 @@
 /*
-	Severian's AMXX Mod by LetiLetiLepestok
-	ver. 1.35  [07.01.2012]
-	
-	
-	Description:
-	
-		This is a clone of original Severian's server mod with some improvements.
-		
-		* Shotgun reloads much faster than normal.
-		* Shotgun shoots much faster than normal.
-		* Shotgun damage increased from normal.
-		* Crossbow reloads much faster than normal.
-		* Crossbow shoots faster than normal.
-		* Crowbar, when right-clicked, fires off "Hello!" to nearby players.
-		* Snarks, when right-clicked, teleport the player to a random spawn point. This can only be done once every 2 minutes, or once per death (whichever comes quicker!).
-		* Snarks also look different and use the 'chumtoad' model.
-		* Snarks, when dying, explode and cause area effect damage for 5 points.
-		* Hand Grenades, when right-clicked, launch and detonate on impact. You can only do this once every 5 seconds.
-		* Tripmines, when right-clicked, will place a 'lightning' mine which will blow up with 150% of the damage of a regular mine.
-		* Players have 1 second of spawn protection before they may be shot. They can however, fire immediately upon spawning.
-		* Flashlight is much brighter than normal.
-		* Map information, remaining time, and fraglimit displayed when you are dead.
-		* Identification of players when you aim your crosshair at them, built in.
+Severian's AMXX Mod by LetiLetiLepestok
+ver. 1.35  [07.01.2012]
 
 
-	Cvars:
-		sev_flashlight_style	1 		Flashlight style 									0 - classic, 1 - severian's
-		sev_snark_style			1 		Snarks style 										0 - classic, 1 - severian's
-		sev_status_style		1 		Status of a player then aim. 						0 - classic, 1 - severians, 2 - disabled
-		sev_hornet_style		1 		Colored hornets 									0 - disable, 1 - enable
-		sev_tripmine_style		1 		Tripmines style 									0 - classic, 1 - severian's
-		sev_death_info			1 		HUD message ater death 								0 - disable, 1 - enable
-		sev_sp_time				0.5		Spawn protection time in seconds. 					0 - disable spawn protection
-		sev_shotgun_gibs		1		Make gibs if damage for shotgun exeeds 180 pts. 	0 - disable spawn protection
-		sev_remove_map_eqip		1		Remove in map spawn equipment						0 - leave ,  1 - remove
-		sev_shotgun_gibs		1		Make gibs on getting high shot damage				0 - disable, 1 - enable
+Description:
 
-	Feedback and suggestions:
-		ICQ 3884085
-		e-mail:afalink@dolphins.ru
+This is a clone of original Severian's server mod with some improvements.
+
+* Shotgun reloads much faster than normal.
+* Shotgun shoots much faster than normal.
+* Shotgun damage increased from normal.
+* Crossbow reloads much faster than normal.
+* Crossbow shoots faster than normal.
+* Crowbar, when right-clicked, fires off "Hello!" to nearby players.
+* Snarks, when right-clicked, teleport the player to a random spawn point. This can only be done once every 2 minutes, or once per death (whichever comes quicker!).
+* Snarks also look different and use the 'chumtoad' model.
+* Snarks, when dying, explode and cause area effect damage for 5 points.
+* Hand Grenades, when right-clicked, launch and detonate on impact. You can only do this once every 5 seconds.
+* Tripmines, when right-clicked, will place a 'lightning' mine which will blow up with 150% of the damage of a regular mine.
+* Players have 1 second of spawn protection before they may be shot. They can however, fire immediately upon spawning.
+* Flashlight is much brighter than normal.
+* Map information, remaining time, and fraglimit displayed when you are dead.
+* Identification of players when you aim your crosshair at them, built in.
 
 
-	Credits:
-		Thanks to Arkshine for shotgun code
-		Thanks to Nadya and Stan for testing
-		
+Cvars:
+sev_flashlight_style	1 		Flashlight style 									0 - classic, 1 - severian's
+sev_snark_style			1 		Snarks style 										0 - classic, 1 - severian's
+sev_status_style		1 		Status of a player then aim. 						0 - classic, 1 - severians, 2 - disabled
+sev_hornet_style		1 		Colored hornets 									0 - disable, 1 - enable
+sev_tripmine_style		1 		Tripmines style 									0 - classic, 1 - severian's
+sev_death_info			1 		HUD message ater death 								0 - disable, 1 - enable
+sev_sp_time				0.5		Spawn protection time in seconds. 					0 - disable spawn protection
+sev_shotgun_gibs		1		Make gibs if damage for shotgun exeeds 180 pts. 	0 - disable spawn protection
+sev_remove_map_eqip		1		Remove in map spawn equipment						0 - leave ,  1 - remove
+sev_shotgun_gibs		1		Make gibs on getting high shot damage				0 - disable, 1 - enable
+
+Feedback and suggestions:
+ICQ 3884085
+e-mail:afalink@dolphins.ru
+
+
+Credits:
+Thanks to Arkshine for shotgun code
+Thanks to Nadya and Stan for testing
+
 */
 
 #include <amxmodx>
@@ -117,49 +117,49 @@ new g_enable_snark, g_enable_grenade, g_enable_tripmine;
 new g_enable_gauss_ammo;
 
 public plugin_cfg() {
-    new configfile[64];
-    get_configsdir(configfile, charsmax(configfile));
-    format(configfile, charsmax(configfile), "%s/sev.ini", configfile);
-
-    if (!file_exists(configfile)) {
-        log_amx("sev.ini not found! All features enabled by default.");
-        g_enable_shotgun = g_enable_crossbow = g_enable_crowbar = 1;
-        g_enable_snark = g_enable_grenade = g_enable_tripmine = 1;
-        g_enable_gauss_ammo = 1;
-        return;
-    }
-
-    g_enable_shotgun = read_config_setting(configfile, "shotgun", 1);
-    g_enable_crossbow = read_config_setting(configfile, "crossbow", 1);
-    g_enable_crowbar = read_config_setting(configfile, "crowbar", 1);
-    g_enable_snark = read_config_setting(configfile, "snark", 1);
-    g_enable_grenade = read_config_setting(configfile, "grenade", 1);
-    g_enable_tripmine = read_config_setting(configfile, "tripmine", 1);
-    g_enable_gauss_ammo = read_config_setting(configfile, "gauss_ammo", 1);
+	new configfile[64];
+	get_configsdir(configfile, charsmax(configfile));
+	format(configfile, charsmax(configfile), "%s/sev.ini", configfile);
+	
+	if (!file_exists(configfile)) {
+		log_amx("sev.ini not found! All features enabled by default.");
+		g_enable_shotgun = g_enable_crossbow = g_enable_crowbar = 1;
+		g_enable_snark = g_enable_grenade = g_enable_tripmine = 1;
+		g_enable_gauss_ammo = 1;
+		return;
+	}
+	
+	g_enable_shotgun = read_config_setting(configfile, "shotgun", 1);
+	g_enable_crossbow = read_config_setting(configfile, "crossbow", 1);
+	g_enable_crowbar = read_config_setting(configfile, "crowbar", 1);
+	g_enable_snark = read_config_setting(configfile, "snark", 1);
+	g_enable_grenade = read_config_setting(configfile, "grenade", 1);
+	g_enable_tripmine = read_config_setting(configfile, "tripmine", 1);
+	g_enable_gauss_ammo = read_config_setting(configfile, "gauss_ammo", 1);
 }
 
 read_config_setting(const file[], const key[], defvalue) {
-    new line[128], tempKey[32], tempValue[4];
-    new txtlen;
-    for (new i = 0; read_file(file, i, line, charsmax(line), txtlen); i++) {
-        trim(line);
-        if (line[0] == ';' || line[0] == '#' || !line[0])
-            continue;
-
-        parse(line, tempKey, charsmax(tempKey), tempValue, charsmax(tempValue));
-        if (equali(tempKey, key)) {
-            return str_to_num(tempValue);
-        }
-    }
-    return defvalue;
+	new line[128], tempKey[32], tempValue[4];
+	new txtlen;
+	for (new i = 0; read_file(file, i, line, charsmax(line), txtlen); i++) {
+		trim(line);
+		if (line[0] == ';' || line[0] == '#' || !line[0])
+			continue;
+		
+		parse(line, tempKey, charsmax(tempKey), tempValue, charsmax(tempValue));
+		if (equali(tempKey, key)) {
+			return str_to_num(tempValue);
+		}
+	}
+	return defvalue;
 }
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-
+	
 	g_pcvar_enable_plugin = register_cvar("sev_mod", "1"); // Глобальний перемикач
-
+	
 	RegisterHam(Ham_Weapon_PrimaryAttack	, "weapon_shotgun", "Shotgun_PrimaryAttack_Pre" , 0)
 	RegisterHam(Ham_Weapon_PrimaryAttack	, "weapon_shotgun", "Shotgun_PrimaryAttack_Post", 1)
 	RegisterHam(Ham_Weapon_PrimaryAttack	, "weapon_crossbow", "Crossbow_PrimaryAttack_Post", 1)
@@ -177,21 +177,21 @@ public plugin_init()
 	RegisterHam(Ham_Weapon_SecondaryAttack	, "weapon_tripmine"		, "Tripmine_SecondaryAttack_Pre", 0)
 	RegisterHam(Ham_Weapon_SecondaryAttack	, "weapon_crowbar"		, "Crowbar_SecondaryAttack_Post", 1 )
 	RegisterHam(Ham_Weapon_SecondaryAttack	, "weapon_gauss", "Gauss_Attack_Post", 1)
-
+	
 	RegisterHam(Ham_Weapon_Reload			, "weapon_shotgun"		, "Shotgun_Reload_Pre" , 0)
 	RegisterHam(Ham_Weapon_Reload			, "weapon_shotgun"		, "Shotgun_Reload_Post", 1)	
 	RegisterHam(Ham_Weapon_Reload			, "weapon_crossbow"		, "Crossbow_Reload_Post", 1)
-
+	
 	RegisterHam(Ham_Touch					, "grenade"				, "Grenade_Touch", 0)
-
+	
 	RegisterHam(Ham_Spawn					, "monster_tripmine"	, "TripMine_Spawn_Post", 0)
 	RegisterHam(Ham_Spawn					, "player"				, "Player_Spawn_Pre", 0)
 	RegisterHam(Ham_Spawn					, "player"				, "Player_Spawn_Post", 1)
 	
 	RegisterHam(Ham_Killed					, "player"				, "Player_Death_Post", 1)
-
+	
 	RegisterHam(Ham_Think					, "monster_tripmine"	, "TripMine_Think_Post", 1)
-
+	
 	RegisterHam(Ham_TraceAttack			  	, "player"				, "fw_TraceAttack")
 	RegisterHam(Ham_TraceAttack			  	, "worldspawn"			, "fw_TraceAttackWorld")
 	
@@ -203,7 +203,7 @@ public plugin_init()
 	register_forward(FM_SetModel			, "fwd_SetModel")
 	register_forward(FM_GetGameDescription	, "fwd_GetGameDescription")
 	register_forward(FM_PlayerPreThink	, "OnPlayerPreThink")
-
+	
 	register_message(get_user_msgid("Flashlight")	, "msg_FlashLight")
 	register_message(get_user_msgid("StatusValue")	, "msg_StatusValue")
 	register_message(SVC_TEMPENTITY					, "msg_TempEntity" )
@@ -221,7 +221,7 @@ public plugin_init()
 	g_pcvar_remove_map_equip				= register_cvar("sev_remove_map_equip"	, "1")
 	g_pcvar_shotgun_gibs					= register_cvar("sev_shotgun_gibs"		, "1")
 	g_pcvar_shotgun_blod					= register_cvar("sev_shotgun_bloodspray", "1")
-
+	
 	g_pcvar_fraglimit 						= get_cvar_pointer("mp_fraglimit")
 	g_pcvar_timelimit 						= get_cvar_pointer("mp_timelimit")
 	
@@ -243,7 +243,7 @@ public plugin_precache()
 	precache_sound("weapons/glauncher2.wav")
 	precache_sound(g_CrowbarSounds[0])
 	precache_sound(g_CrowbarSounds[1])
-
+	
 	precache_model("models/chumtoad.mdl")
 	precache_model("sprites/b-tele1.spr")
 	precache_model("models/w_grenade.mdl")
@@ -288,13 +288,13 @@ public start_map()
 		log_amx("Equipment file is too small.")
 		return
 	}
-
+	
 	new text[36]
 	new equip_name[32]
 	new equip_num[3]
 	new line
 	new textsize
-
+	
 	ent = 0
 	
 	if(no_eqip_file || get_pcvar_num(g_pcvar_remove_map_equip))
@@ -311,10 +311,10 @@ public start_map()
 	{
 		line++
 		trim(text)
-
+		
 		if(text[0] == ';')
 			continue
-	
+		
 		parse(text, equip_name, charsmax(equip_name), equip_num, charsmax(equip_num))
 		
 		if(!str_to_num(equip_num))
@@ -324,7 +324,7 @@ public start_map()
 		
 		if(line > 48)
 			break
-
+		
 		equip_name = ""
 		equip_num = ""
 	}
@@ -335,51 +335,54 @@ public start_map()
 
 public fw_TraceAttack(victim, inflictor, Float:damage, Float:direction[3], traceresult, damagebits)
 {
-	if (!PLUGIN_ENABLED) 
-		return HAM_IGNORED;
+    if (!PLUGIN_ENABLED) 
+        return HAM_IGNORED;
 
-	static weapon
-	static Float:hitpoint[3]
-	static Float:vector[3]
-	static Float:bloodstart[3]
+    static weapon
+    static Float:hitpoint[3]
+    static Float:vector[3]
+    static Float:bloodstart[3]
 
-	weapon = get_user_weapon(inflictor)
+    // Only call get_user_weapon if inflictor is a valid player
+    if (1 <= inflictor <= g_MaxPlayers) {
+        weapon = get_user_weapon(inflictor)
 
-	if(weapon == HLW_SHOTGUN)
-	{
-		if (!g_enable_shotgun) return HAM_IGNORED;
-		SetHamParamFloat(3, g_DamagePerShot)
-		
-		if(!get_pcvar_num(g_pcvar_shotgun_blod))
-			return HAM_IGNORED
-		
-		get_tr2(traceresult, TR_vecEndPos, hitpoint)
+        if(weapon == HLW_SHOTGUN)
+        {
+            if (!g_enable_shotgun) return HAM_IGNORED;
+            SetHamParamFloat(3, g_DamagePerShot)
 
-		xs_vec_mul_scalar(direction, random_float(100.0, 400.0), vector)
-		xs_vec_mul_scalar(direction, 50.0, bloodstart)
-		xs_vec_add(hitpoint, bloodstart, bloodstart)
-		
-		message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
-		write_byte(TE_BLOODSTREAM)
-		write_coord(floatround(bloodstart[0]))
-		write_coord(floatround(bloodstart[1]))
-		write_coord(floatround(bloodstart[2]))
-		write_coord(floatround(vector[0])) // x
-		write_coord(floatround(vector[1])) // y
-		write_coord(floatround(vector[2])) // z
-		write_byte(70) // color
-		write_byte(150) // speed
-		message_end()
-		return HAM_IGNORED
-	}
-	
-	if(weapon == HLW_CROWBAR)		
-	{
-		if (!g_enable_crowbar) return HAM_IGNORED;
-		SetHamParamFloat(3, g_DamageCrowbar)
-	}
-			
-	return HAM_IGNORED
+            if(!get_pcvar_num(g_pcvar_shotgun_blod))
+                return HAM_IGNORED
+
+            get_tr2(traceresult, TR_vecEndPos, hitpoint)
+
+            xs_vec_mul_scalar(direction, random_float(100.0, 400.0), vector)
+            xs_vec_mul_scalar(direction, 50.0, bloodstart)
+            xs_vec_add(hitpoint, bloodstart, bloodstart)
+
+            message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
+            write_byte(TE_BLOODSTREAM)
+            write_coord(floatround(bloodstart[0]))
+            write_coord(floatround(bloodstart[1]))
+            write_coord(floatround(bloodstart[2]))
+            write_coord(floatround(vector[0])) // x
+            write_coord(floatround(vector[1])) // y
+            write_coord(floatround(vector[2])) // z
+            write_byte(70) // color
+            write_byte(150) // speed
+            message_end()
+            return HAM_IGNORED
+        }
+
+        if(weapon == HLW_CROWBAR)        
+        {
+            if (!g_enable_crowbar) return HAM_IGNORED;
+            SetHamParamFloat(3, g_DamageCrowbar)
+        }
+    }
+
+    return HAM_IGNORED
 }
 
 public fw_TraceAttackWorld(victim, inflictor, Float:damage, Float:direction[3], traceresult, damagebits)
@@ -404,10 +407,10 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage, damage_type)
 {
 	if (!PLUGIN_ENABLED || !g_enable_shotgun || damage < g_GibsDmg || !(1 <= inflictor <= g_MaxPlayers) || !get_pcvar_num(g_pcvar_shotgun_gibs))
 		return HAM_IGNORED;
-
+	
 	if(get_user_weapon(inflictor) == HLW_SHOTGUN)
 		SetHamParamInteger(5, DMG_ALWAYSGIB);
-
+	
 	return HAM_IGNORED;
 }
 
@@ -424,13 +427,13 @@ public Shotgun_PrimaryAttack_Post (const shotgun)
 {
 	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
-
+	
 	if (g_OldClip[player] <= 0)
 		return
-
+	
 	set_pdata_float(shotgun, m_flNextPrimaryAttack  , 0.6, LINUX_OFFSET_WEAPONS)
 	set_pdata_float(shotgun, m_flNextSecondaryAttack, 0.6, LINUX_OFFSET_WEAPONS)
-
+	
 	if (get_pdata_int(shotgun, m_iClip, LINUX_OFFSET_WEAPONS) != 0)
 		set_pdata_float(shotgun, m_flTimeWeaponIdle, 2.0, LINUX_OFFSET_WEAPONS)
 	else
@@ -448,13 +451,13 @@ public Shotgun_SecondaryAttack_Post (const shotgun)
 {
 	if (!PLUGIN_ENABLED || !g_enable_shotgun) return;
 	new player = get_pdata_cbase(shotgun, m_pPlayer, LINUX_OFFSET_WEAPONS)
-
+	
 	if (g_OldClip[player] <= 1)
 		return
-
+	
 	set_pdata_float(shotgun, m_flNextPrimaryAttack  , 0.4, LINUX_OFFSET_WEAPONS)
 	set_pdata_float(shotgun, m_flNextSecondaryAttack, 0.8, LINUX_OFFSET_WEAPONS)
-
+	
 	if (get_pdata_int(shotgun, m_iClip, LINUX_OFFSET_WEAPONS) != 0)
 		set_pdata_float(shotgun, m_flTimeWeaponIdle, 3.0, LINUX_OFFSET_WEAPONS)
 	else
@@ -528,7 +531,7 @@ public  fwd_EmitSound(ent, channel, sample[], Float:volume, Float:attn, flags, p
 	
 	new classname[32]
 	pev(ent, pev_classname, classname, 31)
-
+	
 	if(equal(classname, "monster_tripmine")  &&  equal(sample, "weapons/mine_activate.wav"))
 	{
 		TripMine_Beam(ent)
@@ -574,10 +577,10 @@ public Snark_SecondaryAttack_Post(id)
 	new player = pev(id, pev_owner)
 	
 	new ent = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "cycler_sprite"))
-
+	
 	set_pev(ent, pev_rendermode, kRenderTransAdd)
 	engfunc(EngFunc_SetModel, ent, "sprites/b-tele1.spr")
-
+	
 	set_pev(ent, pev_renderamt, 255.0)
 	set_pev(ent, pev_animtime, 1.0)
 	set_pev(ent, pev_framerate, 50.0)
@@ -590,7 +593,7 @@ public Snark_SecondaryAttack_Post(id)
 	set_pev(ent, pev_solid, SOLID_NOT)
 	
 	emit_sound(ent, CHAN_AUTO, "debris/beamstart4.wav", 0.8, ATTN_NORM, 0, PITCH_NORM)
-
+	
 	message_begin(MSG_BROADCAST,SVC_TEMPENTITY)
 	write_byte(TE_DLIGHT)
 	write_coord(floatround(origin[0]))
@@ -641,63 +644,63 @@ public remove_telesprite_task(ent)
 
 public Grenade_SecondaryAttack_Pre(weapon)
 {
-    if (!PLUGIN_ENABLED || !g_enable_grenade) return HAM_SUPERCEDE;
-    new player = pev(weapon, pev_owner);
-
-    // Синхронізуємо альтернативний лічильник з m_rgAmmo
-    new ammo = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO);
-    if (g_grenade_alt_counter[player] != ammo)
-        g_grenade_alt_counter[player] = ammo;
-
-    if (g_grenade_alt_counter[player] <= 0)
-        return HAM_SUPERCEDE;
-
-    new g_GrenadeSounds[2][48] = {"weapons/glauncher.wav", "weapons/glauncher2.wav"};
-
-    new Float:origin[3];
-    new Float:velocity[3];
-    new Float:avelocity[3];
-    new Float:v_ofs[3];
-    new Float:angles[3];
-
-    // Зменшуємо обидва лічильники!
-    g_grenade_alt_counter[player]--;
-    set_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, g_grenade_alt_counter[player], LINUX_OFFSET_AMMO);
-
-    new ent = engfunc(EngFunc_CreateNamedEntity, g_GrenadeAllocString);
-
-    pev(player, pev_origin, origin);
-    pev(player, pev_view_ofs, v_ofs);
-    pev(player, pev_angles, angles);
-
-    origin[0] += v_ofs[0];
-    origin[1] += v_ofs[1];
-    origin[2] += v_ofs[2];
-
-    velocity_by_aim(player, 800, velocity);
-
-    avelocity[0] = random_float(-500.0, 100.0);
-    avelocity[2] = random_float(-100.0, 100.0);
-
-    set_pev(ent, pev_avelocity, avelocity);
-    set_pev(ent, pev_origin, origin);
-    set_pev(ent, pev_angles, angles);
-    set_pev(ent, pev_owner, player);
-    set_pev(ent, pev_gravity, 0.5);
-    set_pev(ent, pev_velocity, velocity);
-
-    dllfunc(DLLFunc_Spawn, ent);
-    set_pev(ent, pev_takedamage, DAMAGE_YES);
-    set_pev(ent, pev_health, 100.0);
-    engfunc(EngFunc_SetModel, ent, "models/w_grenade.mdl");
-
-    UTIL_PlayWeaponAnimation(player, 5);
-
-    if (g_grenade_alt_counter[player] > 0)
-        set_task(1.0, "grenade_draw_anim", player + 4454);
-
-    emit_sound(ent, CHAN_WEAPON, g_GrenadeSounds[random_num(0, 1)], 1.0, ATTN_NORM, 0, PITCH_NORM);
-    return HAM_HANDLED;
+	if (!PLUGIN_ENABLED || !g_enable_grenade) return HAM_SUPERCEDE;
+	new player = pev(weapon, pev_owner);
+	
+	// Синхронізуємо альтернативний лічильник з m_rgAmmo
+	new ammo = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO);
+	if (g_grenade_alt_counter[player] != ammo)
+		g_grenade_alt_counter[player] = ammo;
+	
+	if (g_grenade_alt_counter[player] <= 0)
+		return HAM_SUPERCEDE;
+	
+	new g_GrenadeSounds[2][48] = {"weapons/glauncher.wav", "weapons/glauncher2.wav"};
+	
+	new Float:origin[3];
+	new Float:velocity[3];
+	new Float:avelocity[3];
+	new Float:v_ofs[3];
+	new Float:angles[3];
+	
+	// Зменшуємо обидва лічильники!
+	g_grenade_alt_counter[player]--;
+	set_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, g_grenade_alt_counter[player], LINUX_OFFSET_AMMO);
+	
+	new ent = engfunc(EngFunc_CreateNamedEntity, g_GrenadeAllocString);
+	
+	pev(player, pev_origin, origin);
+	pev(player, pev_view_ofs, v_ofs);
+	pev(player, pev_angles, angles);
+	
+	origin[0] += v_ofs[0];
+	origin[1] += v_ofs[1];
+	origin[2] += v_ofs[2];
+	
+	velocity_by_aim(player, 800, velocity);
+	
+	avelocity[0] = random_float(-500.0, 100.0);
+	avelocity[2] = random_float(-100.0, 100.0);
+	
+	set_pev(ent, pev_avelocity, avelocity);
+	set_pev(ent, pev_origin, origin);
+	set_pev(ent, pev_angles, angles);
+	set_pev(ent, pev_owner, player);
+	set_pev(ent, pev_gravity, 0.5);
+	set_pev(ent, pev_velocity, velocity);
+	
+	dllfunc(DLLFunc_Spawn, ent);
+	set_pev(ent, pev_takedamage, DAMAGE_YES);
+	set_pev(ent, pev_health, 100.0);
+	engfunc(EngFunc_SetModel, ent, "models/w_grenade.mdl");
+	
+	UTIL_PlayWeaponAnimation(player, 5);
+	
+	if (g_grenade_alt_counter[player] > 0)
+		set_task(1.0, "grenade_draw_anim", player + 4454);
+	
+	emit_sound(ent, CHAN_WEAPON, g_GrenadeSounds[random_num(0, 1)], 1.0, ATTN_NORM, 0, PITCH_NORM);
+	return HAM_HANDLED;
 }
 
 public Grenade_SecondaryAttack_Post(weapon)
@@ -716,7 +719,7 @@ public grenade_draw_anim(player)
 
 public Grenade_Pickup(player)
 {
-    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
+	g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
 }
 
 public Grenade_Touch(ent)
@@ -755,12 +758,12 @@ public msg_TempEntity()
 	
 	if(!get_pcvar_num(g_pcvar_hornet_style) || get_msg_arg_int(1) != TE_BEAMFOLLOW)
 		return PLUGIN_CONTINUE
-
+	
 	pev(get_msg_arg_int(2), pev_classname, classname, 31)
-
+	
 	if(!equal(classname, "hornet"))
 		return PLUGIN_CONTINUE
-
+	
 	r = random_num(0, 255)
 	g = random_num(0, 255)
 	b = random_num(0, 255)
@@ -774,7 +777,7 @@ public msg_TempEntity()
 		g =  floatround(g * multiplier)
 		b =  floatround(b * multiplier)
 	}
-		
+	
 	set_msg_arg_int(4, ARG_BYTE, g_HornetTrailTime)
 	set_msg_arg_int(6, ARG_BYTE, r)
 	set_msg_arg_int(7, ARG_BYTE, g)
@@ -784,25 +787,41 @@ public msg_TempEntity()
 }
 
 // ===================================================================== TRIPMINE SECONDARY ====================	
-	
+
 public TripminePrimaryAttack_Pre(weapon)
 {
-	if (!PLUGIN_ENABLED || !g_enable_tripmine) return HAM_SUPERCEDE;
-	new player = pev(weapon, pev_owner)
-	g_LastTripmineAttack[player] = 1
-	return HAM_HANDLED
-}	
+    // Тепер тільки перевірка на PLUGIN_ENABLED
+    if (!PLUGIN_ENABLED) {
+        // Reset the weapon state when disabled
+        new player = pev(weapon, pev_owner);
+        set_pdata_float(weapon, m_flNextPrimaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
+        set_pdata_float(weapon, m_flNextSecondaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
+        g_LastTripmineAttack[player] = 0;
+        return HAM_SUPERCEDE;
+    }
+    
+    new player = pev(weapon, pev_owner);
+    g_LastTripmineAttack[player] = 1;
+    return HAM_HANDLED;
+}   
 
 public Tripmine_SecondaryAttack_Pre(weapon)
 {
-	if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_tripmine_style) || !g_enable_tripmine)
-		return HAM_SUPERCEDE
-	
-	new player = pev(weapon, pev_owner)
-	g_LastTripmineAttack[player] = 2
-	ExecuteHam(Ham_Weapon_PrimaryAttack, weapon)
-	set_pdata_float (weapon, m_flNextSecondaryAttack, 0.3, LINUX_OFFSET_WEAPONS)
-	return HAM_SUPERCEDE
+    // Тут залишаємо перевірку на g_enable_tripmine
+    if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_tripmine_style) || !g_enable_tripmine) {
+        // Reset the weapon state when disabled
+        new player = pev(weapon, pev_owner);
+        set_pdata_float(weapon, m_flNextPrimaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
+        set_pdata_float(weapon, m_flNextSecondaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
+        g_LastTripmineAttack[player] = 0;
+        return HAM_SUPERCEDE;
+    }
+    
+    new player = pev(weapon, pev_owner);
+    g_LastTripmineAttack[player] = 2;
+    ExecuteHam(Ham_Weapon_PrimaryAttack, weapon);
+    set_pdata_float(weapon, m_flNextSecondaryAttack, 0.3, LINUX_OFFSET_WEAPONS);
+    return HAM_SUPERCEDE;
 }
 
 public TripMine_Spawn_Post(tripmine)
@@ -831,10 +850,10 @@ public TripMine_Beam(tripmine)
 	}
 	else
 		set_pev(beam, pev_body, 2)
-
+	
 	set_pev(beam, pev_renderamt, 100.0)
 	set_pev(beam, pev_scale, 10.0)
-
+	
 	TripMine_Think_Post(tripmine)
 	return false
 }
@@ -847,7 +866,7 @@ public TripMine_Think_Post(tripmine)
 	static Float:color_time
 	
 	pev(tripmine, pev_fuser1, color_time)
-
+	
 	if(color_time < get_gametime())
 	{
 		new Float:rgb[3]
@@ -855,7 +874,7 @@ public TripMine_Think_Post(tripmine)
 		
 		if(!pev_valid(beam))
 			return HAM_IGNORED
-			
+		
 		rgb[0] = random_float(0.0, 255.0)
 		rgb[1] = random_float(0.0, 255.0)
 		rgb[2] = random_float(0.0, 255.0)
@@ -877,23 +896,23 @@ public Player_Spawn_Pre(player)
 
 public Player_Spawn_Post(player)
 {
-    if (!PLUGIN_ENABLED) return;
-    const Float:opacity = 128.0
-    new Float:sp_time = get_pcvar_float(g_pcvar_spawnprotect_time)
-    g_BlockSound = 0	
-
-    emit_sound(player, CHAN_AUTO, "items/gunpickup2.wav", 0.8, ATTN_NORM, 0, PITCH_NORM)
-
-    // Синхронізуємо альтернативний лічильник з m_rgAmmo
-    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
-
-    if(sp_time > 0)
-    {
-        set_pev(player, pev_takedamage, DAMAGE_NO)
-        set_pev(player, pev_rendermode, kRenderTransAlpha)
-        set_pev(player, pev_renderamt, opacity)
-        set_task(sp_time, "unset_spawn_protection", player + 8712)
-    }
+	if (!PLUGIN_ENABLED) return;
+	const Float:opacity = 128.0
+	new Float:sp_time = get_pcvar_float(g_pcvar_spawnprotect_time)
+	g_BlockSound = 0	
+	
+	emit_sound(player, CHAN_AUTO, "items/gunpickup2.wav", 0.8, ATTN_NORM, 0, PITCH_NORM)
+	
+	// Синхронізуємо альтернативний лічильник з m_rgAmmo
+	g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
+	
+	if(sp_time > 0)
+	{
+		set_pev(player, pev_takedamage, DAMAGE_NO)
+		set_pev(player, pev_rendermode, kRenderTransAlpha)
+		set_pev(player, pev_renderamt, opacity)
+		set_task(sp_time, "unset_spawn_protection", player + 8712)
+	}
 }
 
 
@@ -921,9 +940,9 @@ public msg_StatusValue(iMsgID, iDest, iClient)
 		return PLUGIN_HANDLED
 	
 	static value, status[2]
-		
+	
 	value = get_msg_arg_int(2)
- 
+	
 	if(value && get_msg_arg_int(1) == 1)
 	{
 		status[0] = iClient
@@ -950,7 +969,7 @@ public show_status(status[])
 	
 	get_user_name(status[1], name, 31)
 	get_user_info(status[1], "model", model, 31)
-
+	
 	get_user_aiming(status[0], id, body)
 	
 	if(id != status[1])
@@ -973,7 +992,7 @@ public msg_FlashLight(msg_id, msg_dest, player)
 		set_pev(player, pev_effects, pev(player, pev_effects) | EF_BRIGHTLIGHT)						
 	else 
 		set_pev(player, pev_effects, pev(player, pev_effects) & ~EF_BRIGHTLIGHT)
-		return PLUGIN_CONTINUE
+	return PLUGIN_CONTINUE
 }
 
 // ===================================================================== DEATH INFO ============================
@@ -987,12 +1006,12 @@ public Player_Death_Post(player)
 	new mapname[32]
 	new message[128]
 	new time_left[32]
-
+	
 	new fraglimit = get_pcvar_num(g_pcvar_fraglimit)
 	new timelimit = get_pcvar_num(g_pcvar_timelimit)
-
-    g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
-
+	
+	g_grenade_alt_counter[player] = get_pdata_int(player, m_rgAmmo + iHandGrenadeAmmoIndex, LINUX_OFFSET_AMMO)
+	
 	get_mapname(mapname, 31)
 	format_time(time_left, 31, "%M min %S sec", get_timeleft())
 	
@@ -1011,21 +1030,21 @@ public Player_Death_Post(player)
 
 public get_fragsleft()
 {
-    if (!PLUGIN_ENABLED) return 0;
-    new i
-    new frags
-    new frags_max = -32767
-    
-    for(i = 1; i <= g_MaxPlayers; i++)
-    {
-        if(is_user_connected(i))
-        {
-            frags = get_user_frags(i)
-            if(frags > frags_max)
-                frags_max = frags
-        }
-    }
-    return clamp(get_pcvar_num(g_pcvar_fraglimit) - frags_max, 0)
+	if (!PLUGIN_ENABLED) return 0;
+	new i
+	new frags
+	new frags_max = -32767
+	
+	for(i = 1; i <= g_MaxPlayers; i++)
+	{
+		if(is_user_connected(i))
+		{
+			frags = get_user_frags(i)
+			if(frags > frags_max)
+				frags_max = frags
+		}
+	}
+	return clamp(get_pcvar_num(g_pcvar_fraglimit) - frags_max, 0)
 }
 
 // ===================================================================== GAME DESCRIPTION ======================
@@ -1041,25 +1060,25 @@ public fwd_GetGameDescription()
 
 stock UTIL_PlayWeaponAnimation (const Player, const Sequence)
 {
-    set_pev (Player, pev_weaponanim, Sequence)
-
-    message_begin (MSG_ONE_UNRELIABLE, SVC_WEAPONANIM, .player = Player)
-    write_byte(Sequence)
-    write_byte(0)
-    message_end()
+	set_pev (Player, pev_weaponanim, Sequence)
+	
+	message_begin (MSG_ONE_UNRELIABLE, SVC_WEAPONANIM, .player = Player)
+	write_byte(Sequence)
+	write_byte(0)
+	message_end()
 }
 
 //================================================== GAUSS AMMO ================================================
 
 public Gauss_Attack_Post(iItem) {
-    if (!PLUGIN_ENABLED || !g_enable_gauss_ammo) return HAM_IGNORED;
-    if (!pev_valid(iItem)) return HAM_IGNORED
-
-    new id = get_pdata_cbase(iItem, m_pPlayer, LINUX_OFFSET_WEAPONS)
-    if (!is_user_alive(id)) return HAM_IGNORED
-
-    set_pdata_int(id, m_rgAmmo + iUraniumAmmoIndex, MAX_GAUSS_AMMO, LINUX_OFFSET_AMMO)
-
-    return HAM_IGNORED
+	if (!PLUGIN_ENABLED || !g_enable_gauss_ammo) return HAM_IGNORED;
+	if (!pev_valid(iItem)) return HAM_IGNORED
+	
+	new id = get_pdata_cbase(iItem, m_pPlayer, LINUX_OFFSET_WEAPONS)
+	if (!is_user_alive(id)) return HAM_IGNORED
+	
+	set_pdata_int(id, m_rgAmmo + iUraniumAmmoIndex, MAX_GAUSS_AMMO, LINUX_OFFSET_AMMO)
+	
+	return HAM_IGNORED
 }
 
