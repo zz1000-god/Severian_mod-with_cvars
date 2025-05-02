@@ -110,11 +110,11 @@ new g_pcvar_remove_map_equip
 new g_pcvar_death_info
 new g_pcvar_shotgun_gibs
 new g_pcvar_shotgun_blod
+new g_pcvar_gauss_ammo
 
 // Конфігураційні перемикачі
 new g_enable_shotgun, g_enable_crossbow, g_enable_crowbar;
 new g_enable_snark, g_enable_grenade, g_enable_tripmine;
-new g_enable_gauss_ammo;
 
 public plugin_cfg() {
 	new configfile[64];
@@ -125,7 +125,6 @@ public plugin_cfg() {
 		log_amx("sev.ini not found! All features enabled by default.");
 		g_enable_shotgun = g_enable_crossbow = g_enable_crowbar = 1;
 		g_enable_snark = g_enable_grenade = g_enable_tripmine = 1;
-		g_enable_gauss_ammo = 1;
 		return;
 	}
 	
@@ -135,7 +134,7 @@ public plugin_cfg() {
 	g_enable_snark = read_config_setting(configfile, "snark", 1);
 	g_enable_grenade = read_config_setting(configfile, "grenade", 1);
 	g_enable_tripmine = read_config_setting(configfile, "tripmine", 1);
-	g_enable_gauss_ammo = read_config_setting(configfile, "gauss_ammo", 1);
+	set_pcvar_num(g_pcvar_gauss_ammo, read_config_setting(configfile, "gauss_ammo", 1));
 }
 
 read_config_setting(const file[], const key[], defvalue) {
@@ -221,6 +220,7 @@ public plugin_init()
 	g_pcvar_remove_map_equip				= register_cvar("sev_remove_map_equip"	, "1")
 	g_pcvar_shotgun_gibs					= register_cvar("sev_shotgun_gibs"		, "1")
 	g_pcvar_shotgun_blod					= register_cvar("sev_shotgun_bloodspray", "1")
+	g_pcvar_gauss_ammo 						= register_cvar("sev_gauss_ammo"		, "1")
 	
 	g_pcvar_fraglimit 						= get_cvar_pointer("mp_fraglimit")
 	g_pcvar_timelimit 						= get_cvar_pointer("mp_timelimit")
@@ -790,20 +790,10 @@ public msg_TempEntity()
 
 public TripminePrimaryAttack_Pre(weapon)
 {
-    // Тепер тільки перевірка на PLUGIN_ENABLED
-    if (!PLUGIN_ENABLED) {
-        // Reset the weapon state when disabled
-        new player = pev(weapon, pev_owner);
-        set_pdata_float(weapon, m_flNextPrimaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
-        set_pdata_float(weapon, m_flNextSecondaryAttack, 0.5, LINUX_OFFSET_WEAPONS);
-        g_LastTripmineAttack[player] = 0;
-        return HAM_SUPERCEDE;
-    }
-    
     new player = pev(weapon, pev_owner);
     g_LastTripmineAttack[player] = 1;
     return HAM_HANDLED;
-}   
+}
 
 public Tripmine_SecondaryAttack_Pre(weapon)
 {
@@ -1071,14 +1061,14 @@ stock UTIL_PlayWeaponAnimation (const Player, const Sequence)
 //================================================== GAUSS AMMO ================================================
 
 public Gauss_Attack_Post(iItem) {
-	if (!PLUGIN_ENABLED || !g_enable_gauss_ammo) return HAM_IGNORED;
-	if (!pev_valid(iItem)) return HAM_IGNORED
-	
-	new id = get_pdata_cbase(iItem, m_pPlayer, LINUX_OFFSET_WEAPONS)
-	if (!is_user_alive(id)) return HAM_IGNORED
-	
-	set_pdata_int(id, m_rgAmmo + iUraniumAmmoIndex, MAX_GAUSS_AMMO, LINUX_OFFSET_AMMO)
-	
-	return HAM_IGNORED
+    if (!PLUGIN_ENABLED || !get_pcvar_num(g_pcvar_gauss_ammo)) return HAM_IGNORED;
+    if (!pev_valid(iItem)) return HAM_IGNORED;
+
+    new id = get_pdata_cbase(iItem, m_pPlayer, LINUX_OFFSET_WEAPONS);
+    if (!is_user_alive(id)) return HAM_IGNORED;
+
+    set_pdata_int(id, m_rgAmmo + iUraniumAmmoIndex, MAX_GAUSS_AMMO, LINUX_OFFSET_AMMO);
+
+    return HAM_IGNORED;
 }
 
